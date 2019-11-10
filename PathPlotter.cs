@@ -18,9 +18,10 @@ public class PathPlotter : MonoBehaviour
     public GameObject cursorBeacon;
     public Vector3 anchor;
     public List<Node> path;
-    public List<Node> lockedPath;
+    public List<Vector3> lockedPath;
 
     Vector3 cursorLocation;
+    List<Vector3> keyPositions;
     public PathRenderer dynamicLine;
     public PathRenderer staticLine;
 
@@ -41,7 +42,7 @@ public class PathPlotter : MonoBehaviour
        // waypoints = new List<Vector3>();
         waypointNodes = new List<Node>();
         anchor = activeUnit.position;
-        lockedPath = new List<Node>();
+        lockedPath = new List<Vector3>();
         
 
 
@@ -50,6 +51,49 @@ public class PathPlotter : MonoBehaviour
 
     }
     
+    public List<Vector3> RemoveInlines(List<Node> path)
+    {
+        /*Take in all the positions on the path.
+         * Get the direction from the first to the second point. Store this as current vector.
+         * Increment through the third, fourth and so on points, getting their direction in relation to the first point.
+         * compare the two directions, if they are not the same, the first point in the second vector is a keypoint. Add it to the list and set that point as the new start point and continue
+         */
+        int anchorIndex = 0;
+        Debug.Log("FunctionEntered");
+        
+        Vector3 currentDir;
+        Vector3 nextDir;
+        List<Vector3> keyPositions = new List<Vector3>();
+        
+        for (int inc = 1; inc<=path.Count-2;inc++) {
+            currentDir = (path[anchorIndex + 1].worldPosition - path[anchorIndex].worldPosition).normalized;
+            nextDir = (path[inc + 1].worldPosition- path[anchorIndex].worldPosition).normalized;
+            if (currentDir == nextDir)
+            {
+
+               
+                continue;
+                
+
+
+            }
+            else if(currentDir!=nextDir) {
+                //Debug.Log(currentDir);
+                //Debug.Log(nextDir);
+                keyPositions.Add(path[anchorIndex].worldPosition);
+                anchorIndex = inc;
+                
+            
+            }
+            
+        }
+        keyPositions.Add(path[path.Count-1].worldPosition);
+        keyPositions.Insert(0, path[0].worldPosition);
+
+        
+        return keyPositions;
+        
+    }
 
     // Update is called once per frame
     void Update()
@@ -64,10 +108,12 @@ public class PathPlotter : MonoBehaviour
             cursorBeacon.transform.position = hit.point;
             cursorLocation = hit.point;
             pathfinder.FindPath(anchor,cursorLocation);
-            dynamicLine.UpdateLine(path);
+            Debug.Log(RemoveInlines(path).Count);
+            dynamicLine.UpdateLine(RemoveInlines(path));
             
 
         }
+
 
         if (Input.GetMouseButtonDown(0))
         {
@@ -75,15 +121,15 @@ public class PathPlotter : MonoBehaviour
 
             //add path to lockedpath 
 
-            for(int i = 1; i < path.Count; i++)
+            for(int i = 1; i < keyPositions.Count; i++)
             {
-                lockedPath.Add(path[i]);
+                lockedPath.Add(keyPositions[i]);
             }
 
           
 
             
-            staticLine.UpdateLine(lockedPath);
+        //    staticLine.UpdateLine(lockedPath);
             anchor = grid.NodeFromWorldPosition(cursorLocation).worldPosition;
             AddBeacon(anchor);
         }

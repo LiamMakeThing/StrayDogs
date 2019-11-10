@@ -7,11 +7,13 @@ public class PathRenderer : MonoBehaviour
     LineRenderer line;
     public float lineWidth = 0.25f;
     public Material mat;
+    List<Vector3> anchorPoints;
     // Start is called before the first frame update
     void Start()
     {
         line = GetComponent<LineRenderer>();
-        line.SetWidth(lineWidth,lineWidth);
+        line.startWidth=lineWidth;
+        line.endWidth=lineWidth;
         line.material = mat;
 
 
@@ -22,17 +24,27 @@ public class PathRenderer : MonoBehaviour
             }
      */
     }
-    public void UpdateLine(List<Node> path)
+    public void UpdateLine(List<Vector3> keyPoints)
     {
-        line.positionCount = path.Count;
+        anchorPoints = new List<Vector3>();
+        anchorPoints = keyPoints;
+        line.positionCount = anchorPoints.Count;
         //Vector3[] pos = new Vector3[path.Count];
-        for (int i = 0; i< path.Count;i++)
+        for (int i = 0; i< anchorPoints.Count;i++)
         {
-            line.SetPosition(i, path[i].worldPosition);
+            line.SetPosition(i, anchorPoints[i]);
         }
         
         
     }
+    private void OnDrawGizmos()
+    {
+        foreach (Vector3 pos in anchorPoints)
+        {
+            Gizmos.DrawSphere(pos,0.25f);
+        }
+    }
+
 
     // Update is called once per frame
     void Update()
