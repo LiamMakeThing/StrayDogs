@@ -8,6 +8,7 @@ public class GridGenerator : MonoBehaviour
     int gridNodeCountY;
     public Vector2 gridWordUnitSize;
     public float nodeRadius;
+    public float nodeNavSearchRadius;
     float nodeDiameter;
     public LayerMask notNavigable;
     Node[,] grid;
@@ -34,7 +35,7 @@ public class GridGenerator : MonoBehaviour
             for(int y = 0;y<gridNodeCountY; y++)
             {
                 Vector3 worldPointToPlaceNode = worldBottomLeft + Vector3.right * (x * nodeDiameter + nodeRadius) + Vector3.forward * (y * nodeDiameter + nodeRadius);
-                bool navigable = !(Physics.CheckSphere(worldPointToPlaceNode, nodeRadius,notNavigable));//do a sphere check to see if the node overlaps with anything in the nonNavigable layer. Set the local bool navigable to the opposite of what is returned.
+                bool navigable = !(Physics.CheckSphere(worldPointToPlaceNode, nodeNavSearchRadius,notNavigable));//do a sphere check to see if the node overlaps with anything in the nonNavigable layer. Set the local bool navigable to the opposite of what is returned.
                 grid[x, y] = new Node(navigable, worldPointToPlaceNode,x,y);
             }
         }
@@ -105,8 +106,13 @@ public class GridGenerator : MonoBehaviour
                     if (n.isNavigable)
                     {
                         Gizmos.color = Color.white;
+                        if (path.Contains(n))
+                        {
+                            Gizmos.color = Color.blue;
+                        }
                         //Gizmos.DrawSphere(n.worldPosition,nodeVisualizerSize);
                     }
+                    
                     else
                     {
                         Gizmos.color = Color.red;

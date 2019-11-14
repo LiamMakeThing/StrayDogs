@@ -23,7 +23,8 @@ public class PathPlotter : MonoBehaviour
     Vector3 cursorLocation;
     List<Vector3> keyPositions;
     public PathRenderer dynamicLine;
-    public PathRenderer staticLine;
+    bool canMove;
+    public bool optimizePath;
 
 
     /* Allow player to choose multiple waypoints.
@@ -43,6 +44,7 @@ public class PathPlotter : MonoBehaviour
         waypointNodes = new List<Node>();
         anchor = activeUnit.position;
         lockedPath = new List<Vector3>();
+        canMove = true;
         
 
 
@@ -63,33 +65,42 @@ public class PathPlotter : MonoBehaviour
         
         Vector3 currentDir;
         Vector3 nextDir;
-        List<Vector3> keyPositions = new List<Vector3>();
-        
-        for (int inc = 1; inc<=path.Count-2;inc++) {
-            currentDir = (path[anchorIndex + 1].worldPosition - path[anchorIndex].worldPosition).normalized;
-            nextDir = (path[inc + 1].worldPosition- path[anchorIndex].worldPosition).normalized;
-            if (currentDir == nextDir)
+        keyPositions = new List<Vector3>();
+        if (optimizePath)
+        {
+            for (int inc = 1; inc <= path.Count - 2; inc++)
             {
+                currentDir = (path[anchorIndex + 1].worldPosition - path[anchorIndex].worldPosition).normalized;
+                nextDir = (path[inc + 1].worldPosition - path[anchorIndex].worldPosition).normalized;
+                if (currentDir == nextDir)
+                {
 
-               
-                continue;
-                
 
+                    continue;
+
+
+
+                }
+                else if (currentDir != nextDir)
+                {
+                    //Debug.Log(currentDir);
+                    //Debug.Log(nextDir);
+                    keyPositions.Add(path[anchorIndex].worldPosition);
+                    anchorIndex = inc;
+
+
+                }
 
             }
-            else if(currentDir!=nextDir) {
-                //Debug.Log(currentDir);
-                //Debug.Log(nextDir);
-                keyPositions.Add(path[anchorIndex].worldPosition);
-                anchorIndex = inc;
-                
-            
-            }
-            
+            keyPositions.Add(path[path.Count - 1].worldPosition);
+            keyPositions.Insert(0, path[0].worldPosition);
         }
-        keyPositions.Add(path[path.Count-1].worldPosition);
-        keyPositions.Insert(0, path[0].worldPosition);
-
+        else
+        {
+            for (int i = 0; i<path.Count;i++) {
+                keyPositions.Add(path[i].worldPosition);
+            }
+        }
         
         return keyPositions;
         
@@ -100,66 +111,42 @@ public class PathPlotter : MonoBehaviour
     {
 
         //trace between current anchor and mouse node.
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        RaycastHit hit;
-
-        if(Physics.Raycast(ray, out hit))
+        if (canMove)
         {
-            cursorBeacon.transform.position = hit.point;
-            cursorLocation = hit.point;
-            pathfinder.FindPath(anchor,cursorLocation);
-            Debug.Log(RemoveInlines(path).Count);
-            dynamicLine.UpdateLine(RemoveInlines(path));
-            
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
 
+            if (Physics.Raycast(ray, out hit))
+
+            {
+                //cursorBeacon.transform.position = grid.NodeFromWorldPosition(hit.point).worldPosition;
+               
+                cursorLocation = hit.point;
+                pathfinder.FindPath(anchor, cursorLocation);
+                Debug.Log(RemoveInlines(path).Count);
+                keyPositions = RemoveInlines(path);
+                cursorBeacon.transform.position = keyPositions[keyPositions.Count - 1];
+                dynamicLine.UpdateLine(keyPositions);
+               
+              
+
+
+            }
         }
 
 
         if (Input.GetMouseButtonDown(0))
         {
-            //move anchor to new position. 
-
-            //add path to lockedpath 
-
-            for(int i = 1; i < keyPositions.Count; i++)
-            {
-                lockedPath.Add(keyPositions[i]);
-            }
-
-          
-
-            
-        //    staticLine.UpdateLine(lockedPath);
-            anchor = grid.NodeFromWorldPosition(cursorLocation).worldPosition;
-            AddBeacon(anchor);
-        }
 
 
-        
-        //Click the right click to cancel a move
-        if (Input.GetMouseButtonDown(1))
-        {
-            Debug.Log("Movement cleared");
-            foreach(GameObject go in spawnedBeacons)
-            {
-
-                Destroy(go);
-            
-            }
-            spawnedBeacons.Clear();
-            waypointNodes.Clear();
+            anchor = keyPositions[keyPositions.Count - 1];
+            StartCoroutine(player.MoveAlongPath(keyPositions));
+            //canMove = false;
 
         }
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            StartCoroutine(player.MoveAlongPath(lockedPath));
-            
-        }
+
+
     }
 
-    void AddBeacon(Vector3 pos)
-    {
-        GameObject newBeacon = GameObject.Instantiate(waypointBeacon, pos, transform.rotation);
-        spawnedBeacons.Add(newBeacon);
-    }
+ 
 }

@@ -90,6 +90,7 @@ public class Pathfinding : MonoBehaviour
 
         //grid.path = path;
         pathPlotter.path = path;
+        grid.path = path;
     }
 
 
