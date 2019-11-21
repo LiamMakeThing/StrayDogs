@@ -18,6 +18,7 @@ public class PathPlotter : MonoBehaviour
     public GameObject cursorBeacon;
     public Vector3 anchor;
     public List<Node> path;
+    public int pathCost;
     public List<Vector3> lockedPath;
 
     Vector3 cursorLocation;
@@ -25,6 +26,7 @@ public class PathPlotter : MonoBehaviour
     public PathRenderer dynamicLine;
     bool canMove;
     public bool optimizePath;
+    public int availableMoveCurrency;
 
 
     /* Allow player to choose multiple waypoints.
@@ -52,7 +54,6 @@ public class PathPlotter : MonoBehaviour
 
 
     }
-    
     public List<Vector3> RemoveInlines(List<Node> path)
     {
         /*Take in all the positions on the path.
@@ -62,7 +63,7 @@ public class PathPlotter : MonoBehaviour
          */
         int anchorIndex = 0;
         Debug.Log("FunctionEntered");
-        
+
         Vector3 currentDir;
         Vector3 nextDir;
         keyPositions = new List<Vector3>();
@@ -97,14 +98,16 @@ public class PathPlotter : MonoBehaviour
         }
         else
         {
-            for (int i = 0; i<path.Count;i++) {
+            for (int i = 0; i < path.Count; i++)
+            {
                 keyPositions.Add(path[i].worldPosition);
             }
         }
-        
+
         return keyPositions;
-        
+
     }
+
 
     // Update is called once per frame
     void Update()
@@ -122,11 +125,17 @@ public class PathPlotter : MonoBehaviour
                 //cursorBeacon.transform.position = grid.NodeFromWorldPosition(hit.point).worldPosition;
                
                 cursorLocation = hit.point;
-                pathfinder.FindPath(anchor, cursorLocation);
-                Debug.Log(RemoveInlines(path).Count);
-                keyPositions = RemoveInlines(path);
-                cursorBeacon.transform.position = keyPositions[keyPositions.Count - 1];
-                dynamicLine.UpdateLine(keyPositions);
+                Node currentMousedOver = grid.NodeFromWorldPosition(cursorLocation);
+                Node currentPlayerPosition = grid.NodeFromWorldPosition(anchor);
+                if (currentMousedOver != currentPlayerPosition)
+                {
+                    pathfinder.FindPath(anchor, cursorLocation);
+                    //Find last movement node from available AP
+                    int lastIndexNode = FindLastMoveLocationIndex(path);
+                    keyPositions = RemoveInlines(path);
+                    cursorBeacon.transform.position = keyPositions[lastIndexNode];
+                    dynamicLine.UpdateLine(keyPositions,pathCost,lastIndexNode);
+                }
                
               
 
@@ -145,6 +154,27 @@ public class PathPlotter : MonoBehaviour
 
         }
 
+
+    }
+    public int FindLastMoveLocationIndex(List<Node> path)
+    {
+        int availableMovement = availableMoveCurrency;
+        int moveCost = 0;
+        int lastMoveIndex=0;
+        for (int i =0;i<path.Count;i++)
+        {
+            moveCost += path[i].gCost;
+            if(moveCost >= availableMovement)
+            {
+                lastMoveIndex = i;
+                break;
+            }
+            else
+            {
+                lastMoveIndex = path.Count - 1;
+            }
+        }
+        return lastMoveIndex;
 
     }
 

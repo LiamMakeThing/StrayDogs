@@ -80,16 +80,24 @@ public class Pathfinding : MonoBehaviour
     {
         List<Node> path = new List<Node>();
         Node currentNode = endNode;
-
+        int totalGCost = 0;
         while (currentNode != startNode)
         {
             path.Add(currentNode);
             currentNode = currentNode.parent;
+            totalGCost += currentNode.gCost;
         }
+        path.Add(startNode);
+        totalGCost += startNode.gCost;
         path.Reverse();
 
-        //grid.path = path;
+        
+        
+        
+
         pathPlotter.path = path;
+        pathPlotter.pathCost = totalGCost;
+
         grid.path = path;
     }
 
